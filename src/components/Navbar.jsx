@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   FileBarChart,
   Home as HomeIcon,
+  Info,
   Menu,
   X,
   Bell,
@@ -13,9 +14,10 @@ import {
 } from "lucide-react";
 
 const navLinks = [
-  { to: "/",          label: "Home",      icon: HomeIcon        },
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/reports",   label: "Reports",   icon: FileBarChart    },
+  { to: "/",          label: "Home",      icon: HomeIcon,        end: true  },
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, end: false },
+  { to: "/reports",   label: "Reports",   icon: FileBarChart,    end: false },
+  { to: "/about",     label: "About Us",  icon: Info,            end: false },
 ];
 
 export default function Navbar() {
@@ -53,13 +55,8 @@ export default function Navbar() {
 
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-1">
-            {navLinks.map(({ to, label, icon: Icon }) => (
-              <NavLink
-                key={to}
-                to={to}
-                end={to === "/"}
-                className={linkClass}
-              >
+            {navLinks.map(({ to, label, icon: Icon, end }) => (
+              <NavLink key={to} to={to} end={end} className={linkClass}>
                 <Icon className="w-4 h-4" strokeWidth={2} />
                 {label}
               </NavLink>
@@ -76,11 +73,9 @@ export default function Navbar() {
               <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-indigo-600 rounded-full" />
             </button>
             <div className="w-px h-5 bg-slate-200 mx-1" />
-            <NavLink
-              to="/login"
+            <NavLink to="/login"
               className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium
-                         text-slate-600 hover:text-rose-600 hover:bg-rose-50 transition-all duration-200"
-            >
+                         text-slate-600 hover:text-rose-600 hover:bg-rose-50 transition-all duration-200">
               <LogOut className="w-4 h-4" />
               <span>Logout</span>
             </NavLink>
@@ -101,25 +96,18 @@ export default function Navbar() {
       {mobileOpen && (
         <div className="md:hidden border-t border-slate-100 bg-white/95 backdrop-blur-xl px-4 pb-4 pt-2">
           <nav className="flex flex-col gap-1">
-            {navLinks.map(({ to, label, icon: Icon }) => (
-              <NavLink
-                key={to}
-                to={to}
-                end={to === "/"}
-                className={mobileLinkClass}
-                onClick={() => setMobileOpen(false)}
-              >
+            {navLinks.map(({ to, label, icon: Icon, end }) => (
+              <NavLink key={to} to={to} end={end} className={mobileLinkClass}
+                       onClick={() => setMobileOpen(false)}>
                 <Icon className="w-4 h-4" strokeWidth={2} />
                 {label}
               </NavLink>
             ))}
             <div className="h-px bg-slate-100 my-1" />
-            <NavLink
-              to="/login"
+            <NavLink to="/login"
               className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium
                          text-rose-600 hover:bg-rose-50 transition-all duration-200"
-              onClick={() => setMobileOpen(false)}
-            >
+              onClick={() => setMobileOpen(false)}>
               <LogOut className="w-4 h-4" />
               Logout
             </NavLink>

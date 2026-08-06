@@ -1,189 +1,238 @@
+// ============================================================
+// Login.jsx
+// NO server verification — login works instantly based on the
+// role card the user selects.
+//
+// HOW IT WORKS:
+//   1. User selects "Salesman" or "Admin" role card
+//   2. User enters any email + password (not verified)
+//   3. On click LOGIN:
+//        - role = "user"  → saved to context → redirect to /dashboard
+//                           → Dashboard renders UserDashboard
+//        - role = "admin" → saved to context → redirect to /dashboard
+//                           → Dashboard renders AdminDashboard
+//   4. No API call is made at all during login
+//   5. salesman_id is left null (fetched later from sheet if needed)
+// ============================================================
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  TrendingUp,
-  User,
-  Lock,
-  Eye,
-  EyeOff,
-  ShieldCheck,
-  UserCircle2,
-  ArrowRight,
-} from "lucide-react";
+import { useAuth } from "../context/AuthContext";
+import { UserCircle2, ShieldCheck, Eye, EyeOff, LogIn, Package } from "lucide-react";
+import { toast } from "react-toastify";
 
 export default function Login() {
-  const navigate = useNavigate();
-  const [userId, setUserId] = useState("");
-  const [password, setPassword] = useState("");
-  const [userType, setUserType] = useState("user");
+  const [email,        setEmail]        = useState("");
+  const [password,     setPassword]     = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const [selectedRole, setSelectedRole] = useState("user"); // "user" or "admin"
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setSubmitting(true);
-    // Simulate auth — replace with real API call
-    setTimeout(() => {
-      setSubmitting(false);
-      navigate("/");
-    }, 900);
+  const { login }  = useAuth();
+  const navigate   = useNavigate();
+
+  // Role card options shown on the form
+  const roleOptions = [
+    {
+      value: "user",
+      label: "Salesman",
+      sub:   "Place & manage orders",
+      Icon:  UserCircle2,
+      color: "from-indigo-600 to-blue-600",
+      activeBorder: "border-indigo-500 bg-indigo-500/15",
+      dot: "bg-indigo-500",
+    },
+    {
+      value: "admin",
+      label: "Admin",
+      sub:   "Full access & reports",
+      Icon:  ShieldCheck,
+      color: "from-purple-600 to-pink-600",
+      activeBorder: "border-purple-500 bg-purple-500/15",
+      dot: "bg-purple-500",
+    },
+  ];
+
+  // ------------------------------------------------------------
+  // handleLogin
+  // No server call — directly builds a user object from the
+  // entered name/email and selected role, saves to context,
+  // then redirects. Dashboard.jsx routes to the correct page.
+  // ------------------------------------------------------------
+  const handleLogin = () => {
+    // Basic field validation
+    if (!email.trim()) {
+      toast.error("Please enter your email.");
+      return;
+    }
+    if (!password.trim()) {
+      toast.error("Please enter your password.");
+      return;
+    }
+
+    // Build user object — role drives everything downstream
+    // name is derived from the email (before the @ symbol) for display
+    const name = email.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+    const userData = {
+      email:       email.trim(),
+      name,
+      role:        selectedRole,          // "user" or "admin" — set by card selection
+      salesman_id: selectedRole === "user" ? "SM0000" : null, // placeholder, can be updated
+    };
+
+    // Save to AuthContext + localStorage (key: "salesman_user")
+    login(userData);
+
+    // Show welcome toast
+    toast.success(
+      selectedRole === "admin"
+        ? `Welcome Admin, ${name}! 🛡️`
+        : `Welcome, ${name}! 👋`
+    );
+
+    // Redirect to /dashboard — Dashboard.jsx will render
+    // UserDashboard  if role === "user"
+    // AdminDashboard if role === "admin"
+    navigate("/dashboard");
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40
-                    flex items-center justify-center px-4 py-10 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
 
-      <div className="absolute top-0 -left-20 w-72 h-72 bg-indigo-300/30 rounded-full blur-3xl pointer-events-none animate-pulse" />
-      <div className="absolute bottom-0 -right-20 w-80 h-80 bg-blue-300/30 rounded-full blur-3xl pointer-events-none animate-pulse"
-           style={{ animationDelay: "1.5s" }} />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px]
-                      bg-gradient-to-r from-indigo-200/20 to-blue-200/20 rounded-full blur-3xl pointer-events-none" />
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl" />
+      </div>
 
       <div className="relative w-full max-w-md">
 
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-600 to-blue-600
-                          flex items-center justify-center shadow-lg shadow-indigo-500/30">
-            <TrendingUp className="w-6 h-6 text-white" strokeWidth={2.5} />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-slate-900 tracking-tight leading-none">SalesManager</h2>
-            <p className="text-xs text-slate-500 mt-1">Sales analytics platform</p>
-          </div>
-        </div>
+        {/* Card */}
+        <div className="bg-slate-800/60 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl shadow-black/40 p-8">
 
-        <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-slate-200/60
-                        shadow-xl shadow-indigo-500/5 p-7 sm:p-9">
-
-          <div className="mb-7">
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">Welcome back</h1>
-            <p className="text-slate-500 mt-1.5 text-sm">Sign in to continue to your dashboard.</p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-
-            <div>
-              <label htmlFor="userId"
-                     className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
-                User ID
-              </label>
-              <div className="relative group">
-                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400
-                                  group-focus-within:text-indigo-600 transition-colors" />
-                <input
-                  id="userId" type="text" required
-                  value={userId} onChange={(e) => setUserId(e.target.value)}
-                  placeholder="Enter your user ID"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-200
-                             text-sm text-slate-900 placeholder:text-slate-400
-                             focus:outline-none focus:ring-2 focus:ring-indigo-500/30
-                             focus:border-indigo-500 focus:bg-white transition-all duration-200"
-                />
-              </div>
+          {/* Logo + Title */}
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-500/30">
+              <Package className="w-8 h-8 text-white" />
             </div>
+            <h1 className="text-2xl font-bold text-white tracking-tight">Sales Portal</h1>
+            <p className="text-slate-400 text-sm mt-1">Select your role and sign in</p>
+          </div>
 
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label htmlFor="password"
-                       className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                  Password
-                </label>
-                <button type="button"
-                        className="text-xs font-medium text-indigo-600 hover:text-indigo-700 transition-colors">
-                  Forgot?
-                </button>
-              </div>
-              <div className="relative group">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400
-                                  group-focus-within:text-indigo-600 transition-colors" />
-                <input
-                  id="password" type={showPassword ? "text" : "password"} required
-                  value={password} onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  className="w-full pl-10 pr-11 py-3 rounded-xl bg-slate-50 border border-slate-200
-                             text-sm text-slate-900 placeholder:text-slate-400
-                             focus:outline-none focus:ring-2 focus:ring-indigo-500/30
-                             focus:border-indigo-500 focus:bg-white transition-all duration-200"
-                />
-                <button type="button" onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md
-                                   text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-                        aria-label={showPassword ? "Hide password" : "Show password"}>
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
+          <div className="space-y-6">
 
+            {/* ---- Role Selection ---- */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2.5">
-                Login as
-              </label>
+              <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
+                I am logging in as
+              </p>
               <div className="grid grid-cols-2 gap-3">
-                {[
-                  { value: "user",  label: "User",  sub: "Standard access", Icon: UserCircle2 },
-                  { value: "admin", label: "Admin", sub: "Full control",     Icon: ShieldCheck },
-                ].map(({ value, label, sub, Icon }) => (
-                  <label key={value}
-                    className={`relative flex items-center gap-3 px-4 py-3 rounded-xl border-2
-                                cursor-pointer transition-all duration-200
-                                ${userType === value
-                                  ? "border-indigo-500 bg-indigo-50/60 shadow-sm shadow-indigo-500/10"
-                                  : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"}`}>
-                    <input type="radio" name="userType" value={value}
-                           checked={userType === value} onChange={(e) => setUserType(e.target.value)}
-                           className="sr-only" />
-                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors
-                                     ${userType === value
-                                       ? "bg-gradient-to-br from-indigo-600 to-blue-600 text-white"
-                                       : "bg-slate-100 text-slate-500"}`}>
-                      <Icon className="w-5 h-5" strokeWidth={2.2} />
+                {roleOptions.map(({ value, label, sub, Icon, color, activeBorder, dot }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setSelectedRole(value)}
+                    className={`relative flex flex-col items-center gap-2 p-4 rounded-2xl border-2 cursor-pointer transition-all duration-200 text-center
+                      ${selectedRole === value
+                        ? activeBorder
+                        : "border-slate-700 bg-white/3 hover:border-slate-500 hover:bg-white/5"
+                      }`}
+                  >
+                    {/* Icon circle */}
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all
+                      ${selectedRole === value
+                        ? `bg-gradient-to-br ${color} shadow-lg`
+                        : "bg-slate-700"
+                      }`}>
+                      <Icon className="w-6 h-6 text-white" strokeWidth={2} />
                     </div>
-                    <div className="min-w-0">
-                      <p className={`text-sm font-semibold leading-tight
-                                     ${userType === value ? "text-indigo-900" : "text-slate-700"}`}>
+
+                    {/* Label */}
+                    <div>
+                      <p className={`text-sm font-bold ${selectedRole === value ? "text-white" : "text-slate-400"}`}>
                         {label}
                       </p>
                       <p className="text-[11px] text-slate-500 mt-0.5">{sub}</p>
                     </div>
-                    {userType === value && (
-                      <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-indigo-600" />
+
+                    {/* Selected indicator dot */}
+                    {selectedRole === value && (
+                      <span className={`absolute top-2.5 right-2.5 w-2 h-2 rounded-full ${dot}`} />
                     )}
-                  </label>
+                  </button>
                 ))}
+              </div>
+
+              {/* Role badge shown below cards */}
+              <div className={`mt-3 text-center py-2 rounded-xl text-xs font-semibold transition-all
+                ${selectedRole === "admin"
+                  ? "bg-purple-500/10 text-purple-300 border border-purple-500/20"
+                  : "bg-indigo-500/10 text-indigo-300 border border-indigo-500/20"
+                }`}>
+                {selectedRole === "admin"
+                  ? "🛡️  Admin — Full access to reports and all data"
+                  : "👤  Salesman — Create orders and view your customers"}
               </div>
             </div>
 
-            <button type="submit" disabled={submitting}
-              className="w-full mt-2 inline-flex items-center justify-center gap-2 px-5 py-3
-                         rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 text-white
-                         text-sm font-semibold shadow-md shadow-indigo-500/25
-                         hover:shadow-lg hover:shadow-indigo-500/40 hover:-translate-y-0.5
-                         active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed
-                         disabled:hover:translate-y-0 transition-all duration-300">
-              {submitting ? (
-                <>
-                  <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                <>Sign in <ArrowRight className="w-4 h-4" /></>
-              )}
+            {/* ---- Email ---- */}
+            <div>
+              <label className="text-slate-300 text-sm font-medium mb-2 block">Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+                placeholder="your@email.com"
+                autoComplete="email"
+                className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 transition-all"
+              />
+            </div>
+
+            {/* ---- Password ---- */}
+            <div>
+              <label className="text-slate-300 text-sm font-medium mb-2 block">Password</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+                  placeholder="Enter password"
+                  autoComplete="current-password"
+                  className="w-full px-4 py-3 pr-12 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 transition-all"
+                />
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+            </div>
+
+            {/* ---- Login Button ---- */}
+            <button
+              onClick={handleLogin}
+              className={`w-full py-3.5 font-bold text-white rounded-xl transition-all duration-200 shadow-lg flex items-center justify-center gap-2
+                ${selectedRole === "admin"
+                  ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 shadow-purple-500/20"
+                  : "bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 shadow-indigo-500/20"
+                }`}
+            >
+              <LogIn className="w-4 h-4" />
+              {selectedRole === "admin" ? "Login as Admin" : "Login as Salesman"}
             </button>
 
-          </form>
-
-          <p className="text-center text-xs text-slate-500 mt-6">
-            Don't have an account?{" "}
-            <a href="#" className="font-semibold text-indigo-600 hover:text-indigo-700 transition-colors">
-              Contact your admin
-            </a>
-          </p>
+          </div>
         </div>
 
-        <p className="text-center text-[11px] text-slate-400 mt-6">
-          © {new Date().getFullYear()} SalesManager. All rights reserved.
+        {/* Footer note */}
+        <p className="text-center text-slate-600 text-xs mt-4">
+          Role determines what you can access after login
         </p>
-
       </div>
     </div>
   );

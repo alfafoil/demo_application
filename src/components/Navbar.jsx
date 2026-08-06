@@ -1,119 +1,169 @@
+// ============================================================
+// Navbar.jsx
+// The top navigation bar for the Sales Application.
+// Shows different navigation links based on the user's role:
+//   - "user" (salesman): sees Home, Dashboard, Make Order
+//   - "admin": sees Home, Dashboard, Reports
+//   - Not logged in: only sees Login
+// Also shows the logged-in user's name and a Logout button.
+// ============================================================
+
+import { NavLink, useNavigate } from "react-router-dom";
+import { LogOut, LayoutDashboard, ShoppingCart, FileText, Home, Menu, X } from "lucide-react";
 import { useState } from "react";
-import { NavLink } from "react-router-dom";
-import {
-  TrendingUp,
-  LayoutDashboard,
-  FileBarChart,
-  Home as HomeIcon,
-  Info,
-  Menu,
-  X,
-  Bell,
-  Search,
-  LogOut,
-} from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
-const navLinks = [
-  { to: "/",          label: "Home",      icon: HomeIcon,        end: true  },
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, end: false },
-  { to: "/reports",   label: "Reports",   icon: FileBarChart,    end: false },
-  { to: "/about",     label: "About Us",  icon: Info,            end: false },
-];
-
+// ------------------------------------------------------------
+// Navbar Component
+// Renders the top navigation bar with role-filtered links.
+// No props needed — uses AuthContext for user data.
+// ------------------------------------------------------------
 export default function Navbar() {
+  const { user, logout } = useAuth();  // Get current user and logout function
+  const navigate = useNavigate();
+
+  // State to control mobile menu open/close
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // ------------------------------------------------------------
+  // handleLogout()
+  // Clears the user session from context and localStorage,
+  // then redirects to the login page.
+  // ------------------------------------------------------------
+  const handleLogout = () => {
+    logout();           // Clear user from AuthContext + localStorage
+    navigate("/login"); // Redirect to login page
+  };
+
+  // ---- Role-based Navigation Links ----
+  // Define which nav links are shown based on user role.
+  // Each link has: to (route), label (display text), icon (lucide icon)
+  const getNavLinks = () => {
+    // Base links visible to ALL logged-in users
+    const base = [
+      { to: "/",          label: "Home",      icon: Home },
+      { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    ];
+
+    // "Make Order" is ONLY visible for regular users (salesmen)
+    if (user?.role === "user") {
+      base.push({ to: "/make-order", label: "Make Order", icon: ShoppingCart });
+    }
+
+    // "Reports" is ONLY visible for admin users
+    if (user?.role === "admin") {
+      base.push({ to: "/reports", label: "Reports", icon: FileText });
+    }
+
+    return base;
+  };
+
+  // Get the appropriate nav links for the current user
+  const navLinks = user ? getNavLinks() : [];
+
+  // CSS class generator for NavLink — applies active style when on that route
   const linkClass = ({ isActive }) =>
-    `flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
-      isActive
-        ? "bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-md shadow-indigo-500/25"
-        : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+    `flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200
+    ${isActive
+      ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30"
+      : "text-slate-400 hover:text-white hover:bg-white/5"
     }`;
 
-  const mobileLinkClass = ({ isActive }) =>
-    `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-      isActive
-        ? "bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-md shadow-indigo-500/20"
-        : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-    }`;
-
+  // ============================================================
+  // JSX — Rendered UI
+  // ============================================================
   return (
-    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/60 shadow-sm shadow-slate-900/5">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <nav className="sticky top-0 z-50 bg-slate-900/80 backdrop-blur-xl border-b border-white/10">
+      <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between h-16">
 
-          {/* Brand */}
-          <NavLink to="/" className="flex items-center gap-2.5 shrink-0">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600 to-blue-600
-                            flex items-center justify-center shadow-md shadow-indigo-500/30">
-              <TrendingUp className="w-4 h-4 text-white" strokeWidth={2.5} />
+          {/* ---- Brand / Logo ---- */}
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-sm">S</span>
             </div>
-            <span className="text-base font-bold text-slate-900 tracking-tight hidden sm:block">
-              SalesManager
-            </span>
-          </NavLink>
-
-          {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-1">
-            {navLinks.map(({ to, label, icon: Icon, end }) => (
-              <NavLink key={to} to={to} end={end} className={linkClass}>
-                <Icon className="w-4 h-4" strokeWidth={2} />
-                {label}
-              </NavLink>
-            ))}
-          </nav>
-
-          {/* Desktop right side */}
-          <div className="hidden md:flex items-center gap-2">
-            <button className="p-2 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors">
-              <Search className="w-4 h-4" />
-            </button>
-            <button className="relative p-2 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors">
-              <Bell className="w-4 h-4" />
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-indigo-600 rounded-full" />
-            </button>
-            <div className="w-px h-5 bg-slate-200 mx-1" />
-            <NavLink to="/login"
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium
-                         text-slate-600 hover:text-rose-600 hover:bg-rose-50 transition-all duration-200">
-              <LogOut className="w-4 h-4" />
-              <span>Logout</span>
-            </NavLink>
+            <span className="text-white font-bold text-lg tracking-tight">SalesApp</span>
           </div>
 
-          {/* Mobile menu button */}
-          <button
-            onClick={() => setMobileOpen(!mobileOpen)}
-            className="md:hidden p-2 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-            aria-label="Toggle menu"
-          >
-            {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
-        </div>
-      </div>
+          {/* ---- Desktop Navigation Links ---- */}
+          {/* Hidden on mobile, shown on medium screens and above */}
+          {user && (
+            <div className="hidden md:flex items-center gap-1">
+              {navLinks.map(({ to, label, icon: Icon }) => (
+                <NavLink key={to} to={to} className={linkClass} end={to === "/"}>
+                  <Icon className="w-4 h-4" />
+                  {label}
+                </NavLink>
+              ))}
+            </div>
+          )}
 
-      {/* Mobile menu */}
-      {mobileOpen && (
-        <div className="md:hidden border-t border-slate-100 bg-white/95 backdrop-blur-xl px-4 pb-4 pt-2">
-          <nav className="flex flex-col gap-1">
-            {navLinks.map(({ to, label, icon: Icon, end }) => (
-              <NavLink key={to} to={to} end={end} className={mobileLinkClass}
-                       onClick={() => setMobileOpen(false)}>
-                <Icon className="w-4 h-4" strokeWidth={2} />
+          {/* ---- Right Side: User Info + Logout ---- */}
+          <div className="flex items-center gap-3">
+            {user ? (
+              <>
+                {/* User info pill — shows name and role badge */}
+                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg border border-white/10">
+                  <span className="text-white text-sm font-medium">{user.name}</span>
+                  {/* Role badge — different color for admin vs user */}
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-semibold
+                    ${user.role === "admin"
+                      ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                      : "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30"
+                    }`}>
+                    {user.role}
+                  </span>
+                </div>
+
+                {/* Logout button */}
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 px-3 py-2 text-slate-400 hover:text-white hover:bg-red-500/10 hover:border-red-500/20 border border-transparent rounded-lg text-sm transition-all duration-200"
+                  title="Sign out"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span className="hidden sm:block">Logout</span>
+                </button>
+
+                {/* Mobile hamburger menu toggle button */}
+                <button
+                  onClick={() => setMobileOpen(!mobileOpen)}
+                  className="md:hidden text-slate-400 hover:text-white transition-colors"
+                >
+                  {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                </button>
+              </>
+            ) : (
+              /* Show Sign In link when no user is logged in */
+              <NavLink
+                to="/login"
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg transition-all"
+              >
+                Sign In
+              </NavLink>
+            )}
+          </div>
+        </div>
+
+        {/* ---- Mobile Menu (Dropdown) ---- */}
+        {/* Only shown on small screens when hamburger is clicked */}
+        {mobileOpen && user && (
+          <div className="md:hidden pb-4 space-y-1 border-t border-white/10 pt-3">
+            {navLinks.map(({ to, label, icon: Icon }) => (
+              <NavLink
+                key={to}
+                to={to}
+                className={linkClass}
+                end={to === "/"}
+                onClick={() => setMobileOpen(false)} // Close menu when a link is clicked
+              >
+                <Icon className="w-4 h-4" />
                 {label}
               </NavLink>
             ))}
-            <div className="h-px bg-slate-100 my-1" />
-            <NavLink to="/login"
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium
-                         text-rose-600 hover:bg-rose-50 transition-all duration-200"
-              onClick={() => setMobileOpen(false)}>
-              <LogOut className="w-4 h-4" />
-              Logout
-            </NavLink>
-          </nav>
-        </div>
-      )}
-    </header>
+          </div>
+        )}
+      </div>
+    </nav>
   );
 }
